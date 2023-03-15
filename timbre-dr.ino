@@ -3,6 +3,10 @@
 #include <LiquidCrystal_I2C.h>
 
 #define PIN_ALARM 13
+#define PIN_ACTION 10
+#define PIN_LED 8
+#define PIN_ALARM_LED 5
+#define RING_TIME 10
 
 const DateTime nullTime = DateTime(1);
 
@@ -11,6 +15,8 @@ LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 DateTime alarm = nullTime;
 byte nextAlarm[2] = { 0, 0 };
+byte action = LOW;
+byte lastAction = LOW;
 
 String months[12] = { "Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic" };
 String days[7] = { "Dom", "Lun", "Mar", "Mie", "Jue", "Vie", "Sab" };
@@ -20,9 +26,9 @@ byte alarms[16][2] = {
   { 7, 30 },
   { 8, 30 },
   { 9, 30 },
-  { 9, 50 },
-  { 10, 25 },
-  { 11, 30 },
+  { 9, 45 },
+  { 10, 35 },
+  { 11, 25 },
   { 12, 10 },
 
   /// Tarde
@@ -30,19 +36,16 @@ byte alarms[16][2] = {
   { 13, 30 },
   { 14, 30 },
   { 15, 30 },
-  { 15, 50 },
-  { 16, 25 },
-  { 17, 30 },
-  { 18, 30 }
+  { 15, 45 },
+  { 16, 35 },
+  { 17, 25 },
+  { 18, 10 },
 };
 
 void setup() {
-  Serial.begin(9600);
   pinMode(PIN_ALARM, OUTPUT);
-  delay(250);
-
-  pinMode(11, OUTPUT);
-  digitalWrite(11, HIGH);
+  pinMode(PIN_ACTION, INPUT);
+  pinMode(PIN_LED, OUTPUT);
 
   rtc.begin();
   lcd.init();
@@ -51,9 +54,19 @@ void setup() {
 
   // Establece hora actual -> solo si está desincronizado
   // rtc.adjust(DateTime(__DATE__, __TIME__));
+
+  delay(1000);
+  digitalWrite(PIN_LED, HIGH);
 }
 
 void loop() {
+  // Ejecución manual del timbre
+  action = digitalRead(PIN_ACTION);
+  if (lastAction != action) {
+    lastAction = action;
+    setAlarm(lastAction);
+  }
+
   DateTime now = rtc.now();
 
   // Detiene la alarma si ya pasó el tiempo
@@ -95,7 +108,7 @@ void loop() {
   lcd.print(now.day());
   lcd.print('/');
 
-  lcd.print(months[now.month()]);
+  lcd.print(months[now.month() - 1]);
   lcd.print('/');
 
   lcd.print(now.year() % 100);
@@ -156,15 +169,20 @@ void checkAlarm(DateTime time) {
 }
 
 void ring(DateTime time) {
-  digitalWrite(PIN_ALARM, HIGH);
+  setAlarm(HIGH);
   if (alarm == nullTime)
     alarm = time;
 }
 
 void stopRing(DateTime time) {
   if (alarm == nullTime) return;
-  if (time.secondstime() - alarm.secondstime() > 5) {
-    digitalWrite(PIN_ALARM, LOW);
+  if (time.secondstime() - alarm.secondstime() > RING_TIME) {
+    setAlarm(LOW);
     alarm = nullTime;
   }
+}
+
+void setAlarm(byte value) {
+  digitalWrite(PIN_ALARM, value);
+  digitalWrite(PIN_ALARM_LED, value);
 }
