@@ -6,7 +6,7 @@
 #define PIN_ACTION 10
 #define PIN_LED 8
 #define PIN_ALARM_LED 5
-#define RING_TIME 10
+#define RING_TIME 8
 
 const DateTime nullTime = DateTime(1);
 
