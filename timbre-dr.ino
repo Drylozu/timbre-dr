@@ -3,7 +3,6 @@
 #include <LiquidCrystal_I2C.h>
 
 #define PIN_ALARM 13
-#define PIN_ACTION 10
 #define PIN_LED 8
 #define PIN_ALARM_LED 5
 #define RING_TIME 8
@@ -16,7 +15,6 @@ LiquidCrystal_I2C lcd(0x27, 16, 2);
 DateTime alarm = nullTime;
 byte nextAlarm[2] = { 0, 0 };
 byte action = LOW;
-byte lastAction = LOW;
 
 String months[12] = { "Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic" };
 String days[7] = { "Dom", "Lun", "Mar", "Mie", "Jue", "Vie", "Sab" };
@@ -44,7 +42,6 @@ byte alarms[16][2] = {
 
 void setup() {
   pinMode(PIN_ALARM, OUTPUT);
-  pinMode(PIN_ACTION, INPUT);
   pinMode(PIN_LED, OUTPUT);
 
   rtc.begin();
@@ -60,13 +57,6 @@ void setup() {
 }
 
 void loop() {
-  // Ejecución manual del timbre
-  action = digitalRead(PIN_ACTION);
-  if (lastAction != action) {
-    lastAction = action;
-    setAlarm(lastAction);
-  }
-
   DateTime now = rtc.now();
 
   // Detiene la alarma si ya pasó el tiempo
@@ -159,6 +149,8 @@ void checkAlarm(DateTime time) {
     }
 
     nextAlarm[0] = alarms[i][0] % 12;
+    if (nextAlarm[0] == 0)
+      nextAlarm[0] = 12;
     nextAlarm[1] = alarms[i][1];
 
     if (time.hour() == alarms[i][0] && time.minute() == alarms[i][1] && time.second() == 0)
